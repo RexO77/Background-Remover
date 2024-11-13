@@ -92,13 +92,6 @@ def main():
             return
             
         try:
-            # Display file info
-            file_details = {
-                "Filename": uploaded_file.name,
-                "File size": f"{file_size / 1024:.1f} KB",
-                "File type": uploaded_file.type
-            }
-            st.write("File Details:", file_details)
             
             # Load and process image
             image = Image.open(uploaded_file)
