@@ -1,8 +1,12 @@
 import streamlit as st
 from rembg import remove
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 import io
 import time
+import numpy as np
+
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+MAX_IMAGE_SIZE = (2000, 2000)  # Maximum dimensions
 
 def remove_background(image):
     # Convert PIL Image to bytes
@@ -19,6 +23,20 @@ def remove_background(image):
         alpha_matting_erode_size=10
     )
     return Image.open(io.BytesIO(output))
+
+def process_image(image):
+    # Check image size
+    width, height = image.size
+    if width > MAX_IMAGE_SIZE[0] or height > MAX_IMAGE_SIZE[1]:
+        aspect_ratio = width / height
+        if width > height:
+            new_width = MAX_IMAGE_SIZE[0]
+            new_height = int(new_width / aspect_ratio)
+        else:
+            new_height = MAX_IMAGE_SIZE[1]
+            new_width = int(new_height * aspect_ratio)
+        image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+    return image
 
 def main():
     st.set_page_config(page_title="Background Remover", layout="wide")
@@ -60,45 +78,86 @@ def main():
     st.markdown("<h1 style='text-align: center; padding-top: 2rem;'>🎨 Background Remover</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center'>Upload an image to remove its background</p>", unsafe_allow_html=True)
 
+    # Add file size warning
+    st.markdown("<p style='color: #888888; font-size: 0.8em;'>Maximum file size: 5MB</p>", unsafe_allow_html=True)
+    
     # File uploader
     uploaded_file = st.file_uploader("Choose an image...", type=['png', 'jpg', 'jpeg'], label_visibility="collapsed")
 
     if uploaded_file is not None:
-        # Display original image
-        image = Image.open(uploaded_file)
+        file_size = uploaded_file.size
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("<p style='text-align: center'>Original Image</p>", unsafe_allow_html=True)
-            st.image(image, use_column_width=True)
+        if file_size > MAX_FILE_SIZE:
+            st.error("File size is too large! Please upload an image less than 5MB.")
+            return
+            
+        try:
+            # Display file info
+            file_details = {
+                "Filename": uploaded_file.name,
+                "File size": f"{file_size / 1024:.1f} KB",
+                "File type": uploaded_file.type
+            }
+            st.write("File Details:", file_details)
+            
+            # Load and process image
+            image = Image.open(uploaded_file)
+            image = process_image(image)
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("<p style='text-align: center'>Original Image</p>", unsafe_allow_html=True)
+                st.image(image, use_column_width=True)
 
-        # Process button
-        if st.button("Remove Background", use_container_width=True):
-            with st.spinner('Processing image...'):
-                # Add slight delay for better UX
-                time.sleep(0.5)
-                
-                # Remove background
-                output_image = remove_background(image)
-                
-                # Display result
-                with col2:
-                    st.markdown("<p style='text-align: center'>Processed Image</p>", unsafe_allow_html=True)
-                    st.image(output_image, use_column_width=True)
-                
-                # Convert to bytes for download
-                buf = io.BytesIO()
-                output_image.save(buf, format='PNG')
-                byte_im = buf.getvalue()
-                
-                # Download button
-                st.download_button(
-                    label="Download Processed Image",
-                    data=byte_im,
-                    file_name="removed_bg.png",
-                    mime="image/png",
-                    use_container_width=True
-                )
+            # Add format selection for download
+            output_format = st.selectbox(
+                "Select output format:",
+                options=["PNG", "JPEG", "WebP"],
+                index=0
+            )
+
+            if st.button("Remove Background", use_container_width=True):
+                with st.spinner('Processing image...'):
+                    # Add progress bar
+                    progress_bar = st.progress(0)
+                    for i in range(100):
+                        time.sleep(0.01)
+                        progress_bar.progress(i + 1)
+                    
+                    try:
+                        output_image = remove_background(image)
+                        
+                        with col2:
+                            st.markdown("<p style='text-align: center'>Processed Image</p>", unsafe_allow_html=True)
+                            st.image(output_image, use_column_width=True)
+                        
+                        # Convert to selected format
+                        buf = io.BytesIO()
+                        save_format = output_format.lower()
+                        if save_format == 'jpeg':
+                            # Convert to RGB if saving as JPEG
+                            output_image = output_image.convert('RGB')
+                        
+                        output_image.save(buf, format=save_format)
+                        byte_im = buf.getvalue()
+                        
+                        st.download_button(
+                            label=f"Download Processed Image as {output_format}",
+                            data=byte_im,
+                            file_name=f"removed_bg.{save_format}",
+                            mime=f"image/{save_format}",
+                            use_container_width=True
+                        )
+                        
+                    except Exception as e:
+                        st.error(f"Error processing image: {str(e)}")
+                    finally:
+                        progress_bar.empty()
+                        
+        except UnidentifiedImageError:
+            st.error("Invalid image file. Please upload a valid image.")
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()
