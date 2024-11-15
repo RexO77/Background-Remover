@@ -78,8 +78,6 @@ def main():
     st.markdown("<h1 style='text-align: center; padding-top: 2rem;'>🎨 Background Remover</h1>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center'>Upload an image to remove its background</p>", unsafe_allow_html=True)
 
-    # Add file size warning
-    st.markdown("<p style='color: #888888; font-size: 0.8em;'>Maximum file size: 5MB</p>", unsafe_allow_html=True)
     
     # File uploader
     uploaded_file = st.file_uploader("Choose an image...", type=['png', 'jpg', 'jpeg'], label_visibility="collapsed")
