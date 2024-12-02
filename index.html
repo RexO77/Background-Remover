@@ -1,0 +1,46 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Background Remover</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Background Remover</h1>
+        <p>CPU-powered background removal - no server needed!</p>
+
+        <div class="upload-container" id="dropZone">
+            <input type="file" id="fileInput" accept="image/*" hidden>
+            <div class="upload-box">
+                <span>Drop image or</span>
+                <button id="uploadBtn">Choose File</button>
+            </div>
+        </div>
+
+        <div class="memory-stats">
+            <span id="memoryUsage">Memory usage: 0 MB</span>
+        </div>
+
+        <div class="image-container">
+            <canvas id="originalCanvas"></canvas>
+            <canvas id="processedCanvas"></canvas>
+        </div>
+
+        <div class="controls">
+            <select id="formatSelect">
+                <option value="png">PNG</option>
+                <option value="jpeg">JPEG</option>
+            </select>
+            <button id="processBtn" disabled>Process (CPU)</button>
+            <button id="downloadBtn" disabled>Download</button>
+        </div>
+    </div>
+    <script src="worker.js"></script>
+    <script src="processor.js"></script>
+</body>
+</html>

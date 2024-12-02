@@ -9,20 +9,28 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 MAX_IMAGE_SIZE = (2000, 2000)  # Maximum dimensions
 
 def remove_background(image):
-    # Convert PIL Image to bytes
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='PNG')
-    img_byte_arr = img_byte_arr.getvalue()
-    
-    # Remove background
-    output = remove(
-        img_byte_arr,
-        alpha_matting=True,
-        alpha_matting_foreground_threshold=240,
-        alpha_matting_background_threshold=10,
-        alpha_matting_erode_size=10
-    )
-    return Image.open(io.BytesIO(output))
+    # Pre-process image
+    try:
+        # Convert to RGB if necessary
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+            
+        # Convert PIL Image to bytes
+        img_byte_arr = io.BytesIO()
+        image.save(img_byte_arr, format='PNG', optimize=True)
+        img_byte_arr = img_byte_arr.getvalue()
+        
+        # Enhanced background removal with optimized parameters
+        output = remove(
+            img_byte_arr,
+            alpha_matting=True,
+            alpha_matting_foreground_threshold=240,
+            alpha_matting_background_threshold=10,
+            alpha_matting_erode_size=10
+        )
+        return Image.open(io.BytesIO(output))
+    except Exception as e:
+        raise e
 
 def process_image(image):
     # Check image size
